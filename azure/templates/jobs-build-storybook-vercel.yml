@@ -1,0 +1,44 @@
+jobs:
+  - job: BuildStorybook
+    displayName: Build Storybook
+    variables:
+      rootDirectory: src/fe-app
+      verbose: false
+      isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+
+    steps:
+      # Copying vercel build config to the root
+      - task: CopyFiles@2
+        displayName: "Copying vercel configuration to root"
+        inputs:
+          SourceFolder: "$(rootDirectory)/storybookvercelsecondapproach"
+          Contents: 'vercel.json'
+          TargetFolder: "$(rootDirectory)"
+
+      # Copying vercel api
+      - task: CopyFiles@2
+        displayName: "Copying express api"
+        inputs:
+          SourceFolder: "$(rootDirectory)/storybookvercelsecondapproach"
+          Contents: '*.js'
+          TargetFolder: "$(rootDirectory)/api"
+
+      # Storybook Vercel
+      - task: vercel-deployment-task@1
+        name: 'DeployStorybook'
+        displayName: "Deploy Storybook"
+        inputs:
+          vercelProjectId: $(VERCEL_PROJECT_STORYBOOK_ID)
+          vercelOrgId: $(VERCEL_ORG_ID)
+          vercelToken: $(VERCEL_TOKEN)
+          vercelCWD: "$(rootDirectory)"
+          production: $(isMain)
+          debug: $(verbose)
+        condition: or(eq(variables.isMain, true), eq(variables['Build.Reason'], 'PullRequest'))
+
+      # Add the vercel preview url to the pull request
+      - task: vercel-azdo-pr-comment-task@1
+        displayName: "Update Pull Request"
+        inputs:
+          azureToken: $(AZURE_TOKEN)
+          deploymentTaskMessage: $(DeployStorybook.deploymentTaskMessage)

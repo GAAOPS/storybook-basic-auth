@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "storybook:build-preview": "npm-run-all --serial build-storybook storybook-move",
+    "storybook-move": "cd storybook-static && mkdir public && ls | grep -v public | xargs mv -t public && cd .. && rm ./package.json && cp ./storybookvercelsecondapproach/package.json ./"
   },
   "dependencies": {
     "next": "14.0.4",

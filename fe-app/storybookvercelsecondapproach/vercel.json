@@ -1,0 +1,14 @@
+{
+  "functions": {
+    "api/index.js": { 
+      "maxDuration": 30,
+      "includeFiles": "storybook-static/public/**/*"
+    }
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/api"
+    }
+  ]
+}
