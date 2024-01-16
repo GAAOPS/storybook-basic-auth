@@ -1,0 +1,56 @@
+jobs:
+  - job: BuildStorybook
+    displayName: Build Storybook
+    variables:
+      rootDirectory: src/fe-app
+      verbose: false
+      buildDirectoryStorybook: $(rootDirectory)/storybook-static
+      vercelDirectoryStorybook: $(rootDirectory)/storybookvercel
+      isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+
+    steps:
+      # Install NPM Packages
+      - task: Npm@1
+        displayName: "Run npm install"
+        inputs:
+          command: "ci"
+          workingDir: "$(rootDirectory)"
+          verbose: $(verbose)
+
+      # Build Storybook
+      - task: Npm@1
+        displayName: "Build Storybook"
+        inputs:
+          command: "custom"
+          customCommand: "run storybook:build"
+          workingDir: "$(rootDirectory)"
+          verbose: $(verbose)
+
+      # Copy Build Result to vercel directory for deployment
+      - task: CopyFiles@2
+        displayName: 'Prepare assets for vercel deployment. Copying to: $(vercelDirectoryStorybook)'
+        condition: or(eq(variables.isMain, true), eq(variables['Build.Reason'], 'PullRequest'))
+        inputs:
+          SourceFolder: '$(buildDirectoryStorybook)'
+          Contents: '**/*'
+          TargetFolder: '$(vercelDirectoryStorybook)/public'
+  
+      # Storybook Vercel
+      - task: vercel-deployment-task@1
+        name: 'DeployStorybook'
+        displayName: "Deploy Storybook"
+        inputs:
+          vercelProjectId: $(VERCEL_PROJECT_STORYBOOK_ID)
+          vercelOrgId: $(VERCEL_ORG_ID)
+          vercelToken: $(VERCEL_TOKEN)
+          production: $(isMain)
+          vercelCWD: $(vercelDirectoryStorybook)
+          debug: $(verbose)
+        condition: or(eq(variables.isMain, true), eq(variables['Build.Reason'], 'PullRequest'))
+      
+      # Add the vercel preview url to the pull request
+      - task: vercel-azdo-pr-comment-task@1
+        displayName: "Update Pull Request"
+        inputs:
+          azureToken: $(AZURE_TOKEN)
+          deploymentTaskMessage: $(DeployStorybook.deploymentTaskMessage)

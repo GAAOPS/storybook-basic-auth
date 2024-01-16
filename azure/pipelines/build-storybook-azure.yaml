@@ -1,0 +1,19 @@
+trigger:
+  branches:
+    include:
+      - "*"
+    exclude:
+      - feature/*
+
+  paths:
+    include:
+      - fe-app/*
+
+variables:
+  - group: storybook-vercel
+
+stages:
+  - stage: Build
+    displayName: Build Storybook
+    jobs:
+      - template: /azure/templates/jobs-build-storybook-azure.yml
